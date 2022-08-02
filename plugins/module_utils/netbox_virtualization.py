@@ -56,9 +56,8 @@ class NetboxVirtualizationModule(NetboxModule):
         elif data.get("slug"):
             name = data["slug"]
 
-        if self.endpoint in SLUG_REQUIRED:
-            if not data.get("slug"):
-                data["slug"] = self._to_slug(name)
+        if self.endpoint in SLUG_REQUIRED and not data.get("slug"):
+            data["slug"] = self._to_slug(name)
 
         object_query_params = self._build_query_params(
             endpoint_name, data, user_query_params
@@ -75,6 +74,6 @@ class NetboxVirtualizationModule(NetboxModule):
         except AttributeError:
             serialized_object = self.nb_object
 
-        self.result.update({endpoint_name: serialized_object})
+        self.result[endpoint_name] = serialized_object
 
         self.module.exit_json(**self.result)

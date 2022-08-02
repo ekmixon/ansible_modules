@@ -128,13 +128,11 @@ def on_deletion_diff(mock_netbox_module):
 
 @pytest.fixture
 def mock_netbox_module(mocker, mock_ansible_module, find_ids_return):
-    find_ids = mocker.patch("%s%s" % (MOCKER_PATCH_PATH, "._find_ids"))
+    find_ids = mocker.patch(f"{MOCKER_PATCH_PATH}._find_ids")
     find_ids.return_value = find_ids_return
     nb_client = mocker.Mock(name="pynetbox.api")
     nb_client.version = "2.10"
-    netbox = NetboxModule(mock_ansible_module, NB_DEVICES, nb_client=nb_client)
-
-    return netbox
+    return NetboxModule(mock_ansible_module, NB_DEVICES, nb_client=nb_client)
 
 
 @pytest.fixture
@@ -180,19 +178,16 @@ def test_to_slug_returns_valid_slug(mock_netbox_module, non_slug, expected):
 
 @pytest.mark.parametrize("endpoint, app", load_relative_test_data("find_app"))
 def test_find_app_returns_valid_app(mock_netbox_module, endpoint, app):
-    assert app == mock_netbox_module._find_app(endpoint), "app: %s, endpoint: %s" % (
-        app,
-        endpoint,
-    )
+    assert app == mock_netbox_module._find_app(
+        endpoint
+    ), f"app: {app}, endpoint: {endpoint}"
 
 
 @pytest.mark.parametrize(
     "endpoint, data, expected", load_relative_test_data("choices_id")
 )
 def test_change_choices_id(mocker, mock_netbox_module, endpoint, data, expected):
-    fetch_choice_value = mocker.patch(
-        "%s%s" % (MOCKER_PATCH_PATH, "._fetch_choice_value")
-    )
+    fetch_choice_value = mocker.patch(f"{MOCKER_PATCH_PATH}._fetch_choice_value")
     fetch_choice_value.return_value = "temp"
     new_data = mock_netbox_module._change_choices_id(endpoint, data)
     assert new_data == expected
@@ -205,9 +200,7 @@ def test_change_choices_id(mocker, mock_netbox_module, endpoint, data, expected)
 def test_build_query_params_no_child(
     mock_netbox_module, mocker, parent, module_data, expected
 ):
-    get_query_param_id = mocker.patch(
-        "%s%s" % (MOCKER_PATCH_PATH, "._get_query_param_id")
-    )
+    get_query_param_id = mocker.patch(f"{MOCKER_PATCH_PATH}._get_query_param_id")
     get_query_param_id.return_value = 1
     query_params = mock_netbox_module._build_query_params(parent, module_data)
     assert query_params == expected
@@ -220,14 +213,10 @@ def test_build_query_params_no_child(
 def test_build_query_params_child(
     mock_netbox_module, mocker, parent, module_data, child, expected
 ):
-    get_query_param_id = mocker.patch(
-        "%s%s" % (MOCKER_PATCH_PATH, "._get_query_param_id")
-    )
+    get_query_param_id = mocker.patch(f"{MOCKER_PATCH_PATH}._get_query_param_id")
     get_query_param_id.return_value = 1
     # This will need to be updated, but attempting to fix issue quickly
-    fetch_choice_value = mocker.patch(
-        "%s%s" % (MOCKER_PATCH_PATH, "._fetch_choice_value")
-    )
+    fetch_choice_value = mocker.patch(f"{MOCKER_PATCH_PATH}._fetch_choice_value")
     fetch_choice_value.return_value = 200
 
     query_params = mock_netbox_module._build_query_params(
@@ -244,14 +233,10 @@ def test_build_query_params_child(
 def test_build_query_params_user_query_params(
     mock_netbox_module, mocker, parent, module_data, user_query_params, expected
 ):
-    get_query_param_id = mocker.patch(
-        "%s%s" % (MOCKER_PATCH_PATH, "._get_query_param_id")
-    )
+    get_query_param_id = mocker.patch(f"{MOCKER_PATCH_PATH}._get_query_param_id")
     get_query_param_id.return_value = 1
     # This will need to be updated, but attempting to fix issue quickly
-    fetch_choice_value = mocker.patch(
-        "%s%s" % (MOCKER_PATCH_PATH, "._fetch_choice_value")
-    )
+    fetch_choice_value = mocker.patch(f"{MOCKER_PATCH_PATH}._fetch_choice_value")
     fetch_choice_value.return_value = 200
 
     query_params = mock_netbox_module._build_query_params(

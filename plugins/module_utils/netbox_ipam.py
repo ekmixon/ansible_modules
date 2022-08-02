@@ -40,16 +40,15 @@ class NetboxIpamModule(NetboxModule):
                 self._ensure_object_exists(nb_endpoint, endpoint_name, name, data)
             elif self.state == "new":
                 self.nb_object, diff = self._create_netbox_object(nb_endpoint, data)
-                self.result["msg"] = "%s %s created" % (endpoint_name, name)
+                self.result["msg"] = f"{endpoint_name} {name} created"
                 self.result["changed"] = True
                 self.result["diff"] = diff
-        else:
-            if self.state == "present":
-                self._ensure_ip_in_prefix_present_on_netif(
-                    nb_app, nb_endpoint, data, endpoint_name
-                )
-            elif self.state == "new":
-                self._get_new_available_ip_address(nb_app, data, endpoint_name)
+        elif self.state == "present":
+            self._ensure_ip_in_prefix_present_on_netif(
+                nb_app, nb_endpoint, data, endpoint_name
+            )
+        elif self.state == "new":
+            self._get_new_available_ip_address(nb_app, data, endpoint_name)
 
     def _ensure_ip_in_prefix_present_on_netif(
         self, nb_app, nb_endpoint, data, endpoint_name
@@ -74,19 +73,18 @@ class NetboxIpamModule(NetboxModule):
         else:
             intf_type = "interface_id"
 
-        query_params.update({intf_type: data[data_intf_key]})
+        query_params[intf_type] = data[data_intf_key]
 
         if data.get("vrf"):
             query_params["vrf_id"] = data["vrf"]
 
-        attached_ips = nb_endpoint.filter(**query_params)
-        if attached_ips:
+        if attached_ips := nb_endpoint.filter(**query_params):
             self.nb_object = attached_ips[-1].serialize()
             self.result["changed"] = False
-            self.result["msg"] = "%s %s already attached" % (
-                endpoint_name,
-                self.nb_object["address"],
-            )
+            self.result[
+                "msg"
+            ] = f'{endpoint_name} {self.nb_object["address"]} already attached'
+
         else:
             self._get_new_available_ip_address(nb_app, data, endpoint_name)
 
@@ -95,34 +93,27 @@ class NetboxIpamModule(NetboxModule):
         prefix = self._nb_endpoint_get(nb_app.prefixes, prefix_query, data["prefix"])
         if not prefix:
             self.result["changed"] = False
-            self.result["msg"] = "%s does not exist - please create first" % (
-                data["prefix"]
-            )
+            self.result["msg"] = f'{data["prefix"]} does not exist - please create first'
         elif prefix.available_ips.list():
             self.nb_object, diff = self._create_netbox_object(
                 prefix.available_ips, data
             )
             self.nb_object = self.nb_object.serialize()
             self.result["changed"] = True
-            self.result["msg"] = "%s %s created" % (
-                endpoint_name,
-                self.nb_object["address"],
-            )
+            self.result["msg"] = f'{endpoint_name} {self.nb_object["address"]} created'
             self.result["diff"] = diff
         else:
             self.result["changed"] = False
-            self.result["msg"] = "No available IPs available within %s" % (
-                data["prefix"]
-            )
+            self.result["msg"] = f'No available IPs available within {data["prefix"]}'
 
     def _get_new_available_prefix(self, data, endpoint_name):
         if not self.nb_object:
             self.result["changed"] = False
-            self.result["msg"] = "Parent prefix does not exist - %s" % (data["parent"])
+            self.result["msg"] = f'Parent prefix does not exist - {data["parent"]}'
         elif self.nb_object.available_prefixes.list():
             if self.check_mode:
                 self.result["changed"] = True
-                self.result["msg"] = "New prefix created within %s" % (data["parent"])
+                self.result["msg"] = f'New prefix created within {data["parent"]}'
                 self.module.exit_json(**self.result)
 
             self.nb_object, diff = self._create_netbox_object(
@@ -130,14 +121,11 @@ class NetboxIpamModule(NetboxModule):
             )
             self.nb_object = self.nb_object.serialize()
             self.result["changed"] = True
-            self.result["msg"] = "%s %s created" % (
-                endpoint_name,
-                self.nb_object["prefix"],
-            )
+            self.result["msg"] = f'{endpoint_name} {self.nb_object["prefix"]} created'
             self.result["diff"] = diff
         else:
             self.result["changed"] = False
-            self.result["msg"] = "No available prefixes within %s" % (data["parent"])
+            self.result["msg"] = f'No available prefixes within {data["parent"]}'
 
     def run(self):
         """
@@ -180,15 +168,10 @@ class NetboxIpamModule(NetboxModule):
         else:
             name = data.get("name")
 
-        if self.endpoint in SLUG_REQUIRED:
-            if not data.get("slug"):
-                data["slug"] = self._to_slug(name)
+        if self.endpoint in SLUG_REQUIRED and not data.get("slug"):
+            data["slug"] = self._to_slug(name)
 
-        if self.module.params.get("first_available"):
-            first_available = True
-        else:
-            first_available = False
-
+        first_available = bool(self.module.params.get("first_available"))
         if data.get("prefix") and self.endpoint == "ip_addresses":
             object_query_params = self._build_query_params("prefix", data)
             self.nb_object = self._nb_endpoint_get(
@@ -218,6 +201,6 @@ class NetboxIpamModule(NetboxModule):
         except AttributeError:
             serialized_object = self.nb_object
 
-        self.result.update({endpoint_name: serialized_object})
+        self.result[endpoint_name] = serialized_object
 
         self.module.exit_json(**self.result)

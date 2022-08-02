@@ -83,7 +83,7 @@ def create_antsibull_docs(files, plugin_type=None):
         plugin_type ([str], optional): Create the proper documentation for the plugin type. Defaults to None.
     """
     for f in files:
-        file_name = re.search(r"(?:.+\/)(\S+)\.py", str(f)).group(1)
+        file_name = re.search(r"(?:.+\/)(\S+)\.py", str(f))[1]
         if file_name in ["netbox_interface"]:
             continue
 

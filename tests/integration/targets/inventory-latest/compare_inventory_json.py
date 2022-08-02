@@ -36,10 +36,7 @@ KEYS_IGNORE_27 = frozenset(
 def all_keys_to_ignore(netbox_version):
     keys = KEYS_REMOVE.union(KEYS_IGNORE)
 
-    if netbox_version == "v2.7":
-        return keys.union(KEYS_IGNORE_27)
-    else:
-        return keys
+    return keys.union(KEYS_IGNORE_27) if netbox_version == "v2.7" else keys
 
 
 # Assume the object will not be recursive, as it originally came from JSON
@@ -73,12 +70,10 @@ def sort_hostvar_arrays(obj):
         return
 
     for hostname, host in hostvars.items():
-        interfaces = host.get("interfaces")
-        if interfaces:
+        if interfaces := host.get("interfaces"):
             host["interfaces"] = sorted(interfaces, key=itemgetter("id"))
 
-        services = host.get("services")
-        if services:
+        if services := host.get("services"):
             host["services"] = sorted(services, key=itemgetter("id"))
 
 
@@ -148,12 +143,7 @@ def main():
         sort_hostvar_arrays(data_a)
         sort_hostvar_arrays(data_b)
 
-        # Perform the diff
-        # syntax='symmetric' will produce output that prints both the before and after as "$insert" and "$delete"
-        # marshal=True removes any special types, allowing to be dumped as json
-        result = diff(data_a, data_b, marshal=True, syntax="symmetric")
-
-        if result:
+        if result := diff(data_a, data_b, marshal=True, syntax="symmetric"):
             # Dictionary is not empty - print differences
             print(json.dumps(result, sort_keys=True, indent=4))
             sys.exit(1)

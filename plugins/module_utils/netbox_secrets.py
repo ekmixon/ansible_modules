@@ -53,6 +53,6 @@ class NetboxSecretsModule(NetboxModule):
         except AttributeError:
             serialized_object = self.nb_object
 
-        self.result.update({endpoint_name: serialized_object})
+        self.result[endpoint_name] = serialized_object
 
         self.module.exit_json(**self.result)

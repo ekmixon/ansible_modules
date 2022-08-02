@@ -123,16 +123,11 @@ class NetboxDcimModule(NetboxModule):
             else:
                 termination_b_name = data.get("termination_b_id")
 
-            name = "%s %s <> %s %s" % (
-                data.get("termination_a_type"),
-                termination_a_name,
-                data.get("termination_b_type"),
-                termination_b_name,
-            )
+            name = f'{data.get("termination_a_type")} {termination_a_name} <> {data.get("termination_b_type")} {termination_b_name}'
 
-        if self.endpoint in SLUG_REQUIRED:
-            if not data.get("slug"):
-                data["slug"] = self._to_slug(name)
+
+        if self.endpoint in SLUG_REQUIRED and not data.get("slug"):
+            data["slug"] = self._to_slug(name)
 
         # Make color params lowercase
         if data.get("color"):
@@ -147,12 +142,12 @@ class NetboxDcimModule(NetboxModule):
                 and cable.termination_b_type == data["termination_b_type"]
                 and cable.termination_b_id == data["termination_b_id"]
             ]
-            if len(cables) == 0:
+            if not cables:
                 self.nb_object = None
             elif len(cables) == 1:
                 self.nb_object = cables[0]
             else:
-                self._handle_errors(msg="More than one result returned for %s" % (name))
+                self._handle_errors(msg=f"More than one result returned for {name}")
         else:
             object_query_params = self._build_query_params(
                 endpoint_name, data, user_query_params
@@ -162,19 +157,18 @@ class NetboxDcimModule(NetboxModule):
             )
 
         # This is logic to handle interfaces on a VC
-        if self.endpoint == "interfaces":
-            if self.nb_object:
-                device = self.nb.dcim.devices.get(self.nb_object.device.id)
-                if (
-                    device["virtual_chassis"]
-                    and self.nb_object.device.id != self.data["device"]
-                ):
-                    if self.module.params.get("update_vc_child"):
-                        data["device"] = self.nb_object.device.id
-                    else:
-                        self._handle_errors(
-                            msg="Must set update_vc_child to True to allow child device interface modification"
-                        )
+        if self.endpoint == "interfaces" and self.nb_object:
+            device = self.nb.dcim.devices.get(self.nb_object.device.id)
+            if (
+                device["virtual_chassis"]
+                and self.nb_object.device.id != self.data["device"]
+            ):
+                if self.module.params.get("update_vc_child"):
+                    data["device"] = self.nb_object.device.id
+                else:
+                    self._handle_errors(
+                        msg="Must set update_vc_child to True to allow child device interface modification"
+                    )
 
         if self.state == "present":
             self._ensure_object_exists(nb_endpoint, endpoint_name, name, data)
@@ -187,6 +181,6 @@ class NetboxDcimModule(NetboxModule):
         except AttributeError:
             serialized_object = self.nb_object
 
-        self.result.update({endpoint_name: serialized_object})
+        self.result[endpoint_name] = serialized_object
 
         self.module.exit_json(**self.result)
